@@ -24,12 +24,15 @@
   "devDependencies": {
     "electron": "^30.0.1",
     "electron-builder": "^24.13.3",
-    "electron-packager": "^17.1.2"
+    "electron-packager": "^17.1.2",
+    "jimp": "^1.6.1",
+    "png-to-ico": "^3.0.1"
   },
   "build": {
     "appId": "com.pdf.screenshot.collector",
     "productName": "PDF Screenshot Collector",
     "win": {
+      "icon": "assets/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -46,7 +49,9 @@
       "createStartMenuShortcut": true,
       "shortcutName": "PDF Screenshot Collector",
       "uninstallDisplayName": "PDF Screenshot Collector",
-      "deleteAppDataOnUninstall": true
+      "deleteAppDataOnUninstall": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
     }
   }
 }
