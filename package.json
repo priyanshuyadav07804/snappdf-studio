@@ -1,0 +1,52 @@
+{
+  "name": "screenshot-pdf-maker",
+  "version": "1.0.0",
+  "description": "Desktop Application to collect question screenshots, perform local OCR, and automatically build standardized PDFs.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "package": "electron-packager . ScreenshotToPDFMaker --platform=win32 --arch=x64 --out=dist --overwrite"
+  },
+  "keywords": [
+    "screenshot",
+    "pdf",
+    "maker",
+    "ocr",
+    "tesseract"
+  ],
+  "author": "Google AI Studio Developer",
+  "license": "MIT",
+  "dependencies": {
+    "jspdf": "^2.5.1",
+    "tesseract.js": "^5.1.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.1",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.2"
+  },
+  "build": {
+    "appId": "com.pdf.screenshot.collector",
+    "productName": "PDF Screenshot Collector",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PDF Screenshot Collector",
+      "uninstallDisplayName": "PDF Screenshot Collector",
+      "deleteAppDataOnUninstall": true
+    }
+  }
+}

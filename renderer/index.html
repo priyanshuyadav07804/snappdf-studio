@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screenshot to PDF Maker</title>
+  
+  <!-- Tailwind CSS CDN for high-fidelity styling inside Electron -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Loading jspdf, tesseract.js and pdf.js from CDN to enable standalone high runtime durability -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-900 text-slate-100 transition-colors duration-200 antialiased font-sans h-screen flex flex-col overflow-hidden">
+
+
+
+
+  <!-- Workspace Shell -->
+  <main class="flex-1 flex overflow-hidden">
+    
+    <!-- Left panel: Interactive workspace manager -->
+    <section class="w-1/2 p-6 flex flex-col space-y-4 border-r border-slate-800 bg-slate-900/50 overflow-y-auto">
+      
+      <!-- Control Panel: Capture Action -->
+      <div id="actionsRow" class="shrink-0 flex items-center space-x-3">
+        <!-- Hidden file import helper inputs -->
+        <input type="file" id="pdfImportInput" accept="application/pdf" class="hidden">
+        <input type="file" id="fileUploadInput" accept="image/png, image/jpeg, image/jpg, image/webp" class="hidden" multiple>
+        
+        <!-- Take Screenshot -->
+        <button id="captureBtn" class="flex-1 flex items-center justify-center space-x-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-xs uppercase tracking-wider transition shadow-lg shadow-indigo-600/10 active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Take Screenshot</span>
+        </button>
+
+        <!-- Global OCR Toggle Switch -->
+        <div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 shrink-0 h-12" title="Toggle OCR globally for all images">
+          <span class="text-xs font-semibold text-slate-400 select-none">OCR</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="globalOcrCheckbox" class="sr-only peer">
+            <div class="w-9 h-5 bg-slate-800 rounded-full peer peer-checked:bg-indigo-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-500 after:border-slate-400 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-white"></div>
+          </label>
+        </div>
+      </div>
+
+
+      <!-- Drag & Drop Zone -->
+      <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-900/30">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-slate-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+        <p class="text-xs text-slate-300 font-medium">Or drag and drop your screenshots here</p>
+        <p class="text-[10px] text-slate-500 mt-0.5">Supports PNG, JPG, JPEG, WEBP</p>
+      </div>
+
+      <!-- History and Undo/Redo Bar -->
+      <div class="flex items-center justify-between py-1 bg-slate-900 border-b border-indigo-900/20 px-1">
+        <div class="flex items-center space-x-2">
+          <button id="undoBtn" class="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded text-slate-300 border border-slate-700 transition" title="Undo Project State (Ctrl+Z)" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" /></svg>
+          </button>
+          <button id="redoBtn" class="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded text-slate-300 border border-slate-700 transition" title="Redo Project State (Ctrl+Y)" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.934 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.334-4z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.934 12.8a1 1 0 000-1.6L14.6 7.2A1 1 0 0013 8v8a1 1 0 001.6.8l5.334-4z" /></svg>
+          </button>
+          <span class="text-[11px] text-emerald-400 font-mono animate-pulse" id="autoSavedBadge">● Auto-Saved</span>
+        </div>
+        <button id="clearAllBtn" class="text-xs text-rose-400 hover:text-rose-300 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 py-1 px-2.5 rounded-lg transition" title="Delete all items">Clear All</button>
+      </div>
+
+      <!-- List of Captured items -->
+      <div class="flex-1 flex flex-col min-h-0">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+          <span>Active Screenshots (<span id="countBadge">0</span>)</span>
+          <span class="text-[10px] text-slate-500 select-none normal-case">Drag and drop list items to reorder</span>
+        </h3>
+
+        <!-- Scrollable list wrapper -->
+        <div class="flex-1 overflow-y-auto pr-1 space-y-2 min-h-0" id="screenshotsList">
+          <!-- Empty State -->
+          <div id="emptyState" class="flex flex-col items-center justify-center h-full text-center p-8 border border-dashed border-slate-800 rounded-xl bg-slate-950/20 py-16">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <h4 class="text-sm font-semibold text-slate-400">No screenshots collected yet</h4>
+            <p class="text-xs text-slate-500 max-w-xs mt-1">Take a screenshot, use Ctrl+Shift+S, or upload image files to construct your PDF document.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right panel: A4 PDF Live Preview -->
+    <section class="w-1/2 bg-slate-950 flex flex-col overflow-hidden">
+      
+      <!-- Live Preview Header and Controls -->
+      <header class="bg-slate-950 px-6 py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span class="text-sm font-medium tracking-wide">A4 Live Render</span>
+        </div>
+        
+        <!-- Document Operations Toolbar -->
+        <div class="flex items-center space-x-2 shrink-0">
+          <button id="createNewPDFBtn" class="flex items-center space-x-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/10 active:scale-95 cursor-pointer border border-indigo-500/20">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>New PDF</span>
+          </button>
+          <button id="openExistingPDFBtn" class="flex items-center space-x-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            <span>Open PDF</span>
+          </button>
+        </div>
+        <div class="flex items-center space-x-3">
+          <!-- Zoom Panel -->
+          <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+            <button id="zoomOut" class="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded text-xs transition" title="Zoom Out">-</button>
+            <span id="zoomLevel" class="px-2 text-xs font-mono font-semibold text-slate-300">80%</span>
+            <button id="zoomIn" class="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded text-xs transition" title="Zoom In">+</button>
+          </div>
+          <!-- Totals badge -->
+          <div class="px-3 py-1 bg-slate-900 border border-slate-800 text-slate-300 rounded-lg text-xs font-mono">
+            Pages: <strong id="pdfTotalPages">1</strong>
+          </div>
+        </div>
+      </header>
+
+      <!-- Scrollable Document Stage container -->
+      <div class="flex-1 overflow-y-auto p-8 flex items-start justify-center min-h-0 bg-slate-950" id="previewViewport">
+        <!-- Live A4 Template Frame -->
+        <div id="liveA4Paper" class="bg-white text-slate-900 shadow-2xl rounded-sm border border-slate-200 transition-all origin-top flex flex-col p-[20pt] relative" style="width: 595pt; min-height: 842pt; transform: scale(0.8);">
+          <div id="pdfPaperContent" class="flex-1 flex flex-col space-y-[20pt] select-none pointer-events-none">
+            <!-- Dynamically populated screenshot preview layers -->
+            <div id="paperEmptyPlaceholder" class="flex-1 flex flex-col items-center justify-center p-12 text-center text-slate-400 py-32">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p class="text-xs text-slate-400 leading-relaxed font-sans">Active paper is currently blank.</p>
+              <p class="text-[10px] text-slate-400 mt-1 max-w-[200px]">Added screen segments are automatically placed here conforming to strict margin rules.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sticky Export Actions -->
+      <footer class="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between shrink-0">
+        <div class="text-xs text-slate-400">
+          Total: <strong id="pdfTotalCount" class="text-white">0</strong> images
+        </div>
+        <div class="flex items-center space-x-3">
+          <button id="openPDFFolderBtn" class="flex items-center space-x-2 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-sm transition active:scale-95 border border-slate-700" title="Open the automatic PDF save folder">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            <span>Open PDF Folder</span>
+          </button>
+          
+          <button id="exportPDFBtn" class="flex items-center space-x-2 py-3 px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-emerald-700/10 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Export as PDF Database</span>
+          </button>
+        </div>
+      </footer>
+    </section>
+
+  </main>
+
+  <!-- Export PDF Name Modal -->
+  <div id="exportModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4 transform scale-95 opacity-0 transition-all duration-200" id="exportModalContent">
+      <div class="flex items-center space-x-2 text-emerald-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="text-base font-bold text-white">Export PDF Database</h3>
+      </div>
+      <p class="text-xs text-slate-400">Your PDF will be automatically saved inside your dedicated PDFs folder:</p>
+      <div class="p-2 bg-slate-950 border border-slate-800 rounded-lg text-[11px] font-mono text-indigo-400 break-all select-all">
+        Documents/PDF Screenshot Collector/
+      </div>
+      <div class="space-y-1">
+        <label for="pdfFilenameInput" class="text-xs font-semibold text-slate-300">File Name</label>
+        <input type="text" id="pdfFilenameInput" class="w-full bg-slate-950 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition" placeholder="Enter file name">
+      </div>
+      <div class="flex items-center justify-end space-x-3 pt-2">
+        <button id="closeExportModalBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition active:scale-95">
+          Cancel
+        </button>
+        <button id="confirmExportBtn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition active:scale-95 shadow-lg shadow-emerald-600/10">
+          Save PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Toast Alert layer -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Dedicated script entry -->
+  <script src="../utils/pdfManager.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

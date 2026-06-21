@@ -1,0 +1,145 @@
+/* Custom styling overrides for Screenshot to PDF Maker inside Electron */
+
+/* Transition rules */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Dragging visual indicators */
+.dragging {
+  opacity: 0.5;
+  border: 2px dashed #6366f1 !important;
+  background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+/* Rotating transforms */
+.rotate-0 { transform: rotate(0deg); }
+.rotate-90 { transform: rotate(90deg); }
+.rotate-180 { transform: rotate(180deg); }
+.rotate-270 { transform: rotate(270deg); }
+
+/* Standard transitions for rotate animation */
+.rotate-transition {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* A4 Live Paper shadow and scale properties */
+#liveA4Paper {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
+
+/* Light theme overrides */
+body.light-theme {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+body.light-theme header {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+body.light-theme kbd {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+body.light-theme main > section:first-of-type {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+body.light-theme #dropZone {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+body.light-theme #dropZone:hover {
+  border-color: #6366f1;
+}
+
+body.light-theme #emptyState {
+  background-color: #fafafa;
+  border-color: #e2e8f0;
+}
+
+body.light-theme #screenshotsList > div {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+body.light-theme #autoSavedBadge {
+  color: #059669;
+}
+
+body.light-theme #actionsRow button:last-of-type {
+  background-color: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+body.light-theme #actionsRow button:last-of-type:hover {
+  background-color: #e2e8f0;
+}
+
+body.light-theme #undoBtn, 
+body.light-theme #redoBtn {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+body.light-theme #undoBtn:hover, 
+body.light-theme #redoBtn:hover {
+  background-color: #e2e8f0;
+}
+
+body.light-theme #themeToggle {
+  color: #475569;
+}
+
+body.light-theme #themeToggle:hover {
+  background-color: #f1f5f9;
+}
+
+body.light-theme #zoomOut,
+body.light-theme #zoomIn {
+  color: #475569;
+}
+
+body.light-theme #zoomOut:hover,
+body.light-theme #zoomIn:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+body.light-theme #zoomLevel {
+  color: #475569;
+}
+
+body.light-theme #pdfTotalPages {
+  color: #334155;
+}
+
+body.light-theme footer {
+  border-color: #e2e8f0;
+}

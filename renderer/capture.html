@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Area Selector</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      user-select: none;
+      cursor: crosshair;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #helper-text {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      color: #f8fafc;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      z-index: 100;
+      transition: opacity 0.2s;
+    }
+  </style>
+</head>
+<body>
+  <div id="helper-text">Drag a selection box to capture an area, or click anywhere to capture the entire screen. Press ESC to cancel.</div>
+  <canvas id="cropCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('cropCanvas');
+    const ctx = canvas.getContext('2d');
+    const helperText = document.getElementById('helper-text');
+    
+    let img = new Image();
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let isDrawing = false;
+    let hasImage = false;
+
+    // Adjust canvas size to window/screen resolution
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      if (hasImage) {
+        drawState();
+      }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Listen for the capture image initialization from the Electron main process
+    window.electronAPI.onInitSelection((sourceImageBase64) => {
+      img.src = sourceImageBase64;
+      img.onload = () => {
+        hasImage = true;
+        drawState();
+      };
+    });
+
+    // Draw background image and selection overlays
+    function drawState() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // 1. Draw the native screen capture background
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // 2. Draw the semi-transparent black overlay
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (isDrawing) {
+        const x = Math.min(startX, currentX);
+        const y = Math.min(startY, currentY);
+        const w = Math.abs(startX - currentX);
+        const h = Math.abs(startY - currentY);
+
+        if (w > 0 && h > 0) {
+          // 3. Clear overlay inside selection box and redraw background image fragment
+          ctx.clearRect(x, y, w, h);
+          ctx.drawImage(img, x, y, w, h, x, y, w, h);
+
+          // 4. Draw selection border outline
+          ctx.strokeStyle = '#6366f1';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 4]);
+          ctx.strokeRect(x, y, w, h);
+
+          // 5. Draw dimensions tag text
+          ctx.fillStyle = '#6366f1';
+          ctx.fillRect(x, y - 22, 75, 18);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '10px monospace';
+          ctx.fillText(`${w} x ${h}`, x + 5, y - 9);
+        }
+      }
+    }
+
+    // Capture area mouse events
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return; // Only trigger crop on left-click
+      startX = e.clientX;
+      startY = e.clientY;
+      currentX = e.clientX;
+      currentY = e.clientY;
+      isDrawing = true;
+      helperText.style.opacity = '0';
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!isDrawing) return;
+      currentX = e.clientX;
+      currentY = e.clientY;
+      drawState();
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      if (!isDrawing) return;
+      isDrawing = false;
+
+      const x = Math.min(startX, currentX);
+      const y = Math.min(startY, currentY);
+      const w = Math.abs(startX - currentX);
+      const h = Math.abs(startY - currentY);
+
+      // If selection is larger than a simple click, perform Area Selection
+      if (w > 5 && h > 5) {
+        // Render crop slice onto offscreen canvas
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = w;
+        cropCanvas.height = h;
+        const cropCtx = cropCanvas.getContext('2d');
+        
+        cropCtx.drawImage(img, x, y, w, h, 0, 0, w, h);
+        
+        // Convert cropped slice to JPEG base64 and return
+        const croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.95);
+        window.electronAPI.cropComplete(croppedDataUrl);
+      } else {
+        // Full Screen Capture: return the full screen image
+        window.electronAPI.cropComplete(img.src);
+      }
+    });
+
+    // Keyboard Shortcuts handler
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        window.electronAPI.cropCancel();
+      }
+    });
+
+    // Right click cancels selection
+    window.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      window.electronAPI.cropCancel();
+    });
+  </script>
+</body>
+</html>

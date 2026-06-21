@@ -1,0 +1,6 @@
+{
+  "name": "Screenshot to PDF Maker",
+  "description": "An interactive utility to capture pages, manage screenshots, run Tesseract OCR, and compile them into standardized A4 PDFs.",
+  "requestFramePermissions": ["display-capture"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
